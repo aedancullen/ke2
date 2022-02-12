@@ -57,7 +57,8 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     step_feat_mean = np.stack(list(map(lambda c: np.mean(c, axis=1), step_feat)), axis=-1)
     
     best_stat = -np.inf
-    best_chunksize = -1
+    best_chunksize = None
+    best_norm = None
     for i in range(chunksize_min, chunksize_max):
         diff = step_feat_mean - np.roll(step_feat_mean, i * beat_steps, axis=1)
         norm = np.linalg.norm(diff, ord=2, axis=0)
@@ -65,6 +66,24 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
         if stat > best_stat:
             best_stat = stat
             best_chunksize = i
-
+            best_norm = norm
+    
     print(best_chunksize, best_stat)
+    
+    chunk_steps = best_chunksize * beat_steps
+    maxchunk = step_feat_mean.shape[1] // chunk_steps
+    
+    best_stat = -np.inf
+    best_offset = None
+    for i in range(1, maxchunk):
+        sum_l = np.sum(best_norm[(i - 1) * chunk_steps : (i) * chunk_steps])
+        sum_r = np.sum(best_norm[(i) * chunk_steps : (i + 1) * chunk_steps])
+        stat = sum_l - sum_r
+        print(i, stat)
+        if stat > best_stat:
+            best_stat = stat
+            best_offset = i
+            
+    print(best_offset, best_stat)
+
     return None, None
