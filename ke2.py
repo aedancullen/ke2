@@ -70,20 +70,24 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     
     print(best_chunksize, best_stat)
     
-    chunk_steps = best_chunksize * beat_steps
-    maxchunk = step_feat_mean.shape[1] // chunk_steps
+    maxbeat = step_feat_mean.shape[1] // beat_steps
     
-    best_stat = -np.inf
-    best_offset = None
-    for i in range(1, maxchunk):
-        sum_l = np.sum(best_norm[(i - 1) * chunk_steps : (i) * chunk_steps])
-        sum_r = np.sum(best_norm[(i) * chunk_steps : (i + 1) * chunk_steps])
+    best_stat_h = -np.inf
+    best_offset_h = None
+    best_stat_l = np.inf
+    best_offset_l = None
+    for i in range(best_chunksize, maxbeat - best_chunksize):
+        sum_l = np.sum(best_norm[(i - best_chunksize) * beat_steps : (i) * beat_steps])
+        sum_r = np.sum(best_norm[(i) * beat_steps : (i + best_chunksize) * beat_steps])
         stat = sum_l - sum_r
-        print(i, stat)
-        if stat > best_stat:
-            best_stat = stat
-            best_offset = i
-            
-    print(best_offset, best_stat)
+        if stat > best_stat_h:
+            best_stat_h = stat
+            best_offset_h = i
+        if stat < best_stat_l:
+            best_stat_l = stat
+            best_offset_l = i
+    
+    print(best_offset_h, best_stat_h)
+    print(best_offset_l, best_stat_l)
 
     return None, None
