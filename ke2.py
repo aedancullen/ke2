@@ -27,9 +27,9 @@ def preprocess(audio, sr):
     
     song_blob = {}
 
-    #song_blob["vocals_onset_strength"] = librosa.onset.onset_strength(vocals)
-    #song_blob["other_onset_strength"] = librosa.onset.onset_strength(other)
-    #song_blob["bass_onset_strength"] = librosa.onset.onset_strength(bass)
+    song_blob["vocals_onset_strength"] = librosa.onset.onset_strength(vocals)
+    song_blob["other_onset_strength"] = librosa.onset.onset_strength(other)
+    song_blob["bass_onset_strength"] = librosa.onset.onset_strength(bass)
     song_blob["drums_onset_strength"] = librosa.onset.onset_strength(drums)
     
     #song_blob["vocals_stft"] = librosa.stft(vocals)
@@ -59,7 +59,7 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     def extract_chunks_from(arr, chunksize, offset, n_chunks):
         chunks = []
         for i in range(n_chunks):
-            chunks.append(arr[offset + i*chunksize : offset + (i+1)*chunksize])
+            chunks.append(arr[:, (offset + i*chunksize) * beat_steps : (offset + (i+1)*chunksize) * beat_steps])
         return chunks
 
     tempo, beats = librosa.beat.beat_track(onset_envelope = song_blob["drums_onset_strength"])
@@ -78,7 +78,7 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     cat_feat_perstep = np.concatenate((
         vocals_chroma_perstep,
         other_chroma_perstep,
-        bass_chroma_perstep
+        bass_chroma_perstep,
     ), axis=0)
     
     best_stat = -np.inf
@@ -118,6 +118,14 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     other_pyin_perstep = gen_feat_perstep(other_pyin, step_idxs)
     bass_pyin_perstep = gen_feat_perstep(bass_pyin, step_idxs)
 
+    vocals_onset_strength = song_blob["vocals_onset_strength"].reshape((1, -1))
+    other_onset_strength = song_blob["other_onset_strength"].reshape((1, -1))
+    bass_onset_strength = song_blob["bass_onset_strength"].reshape((1, -1))
+
+    vocals_onset_strength_perstep = gen_feat_perstep(vocals_onset_strength, step_idxs)
+    other_onset_strength_perstep = gen_feat_perstep(other_onset_strength, step_idxs)
+    bass_onset_strength_perstep = gen_feat_perstep(bass_onset_strength, step_idxs)
+
     cat_all_perstep = np.concatenate((
         vocals_chroma_perstep,
         other_chroma_perstep,
@@ -125,6 +133,9 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
         vocals_pyin_perstep,
         other_pyin_perstep,
         bass_pyin_perstep,
+        vocals_onset_strength_perstep,
+        other_onset_strength_perstep,
+        bass_onset_strength_perstep,
     ), axis=0)
 
     chunks = extract_chunks_from(cat_all_perstep, best_chunksize, best_offset, 3)
