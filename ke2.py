@@ -10,6 +10,7 @@ def monomix(audio):
     return audio
 
 def preprocess(audio, sr):
+
     prediction = separator.separate(audio)
     
     orig = monomix(audio)
@@ -49,23 +50,36 @@ def preprocess(audio, sr):
     return song_blob
 
 def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
+
     def gen_feat_perstep(in_feat, step_idxs):
         step_feat = np.split(in_feat, step_idxs, axis=1)[1:]
         step_feat_mean = np.stack(list(map(lambda c: np.mean(c, axis=1), step_feat)), axis=-1)
         return np.nan_to_num(step_feat_mean)
 
+    def extract_chunks_from(arr, chunksize, offset, n_chunks):
+        chunks = []
+        for i in range(n_chunks):
+            chunks.append(arr[offset + i*chunksize : offset + (i+1)*chunksize])
+        return chunks
+
     tempo, beats = librosa.beat.beat_track(onset_envelope = song_blob["drums_onset_strength"])
+
+    step_idxs = np.interp(np.arange(0, beats.size, 1/beat_steps), np.arange(0, beats.size, 1), beats)
+    step_idxs = np.rint(step_idxs).astype(np.int32)
     
     vocals_chroma = librosa.feature.chroma_cqt(C=np.abs(song_blob["vocals_cqt"]))
     other_chroma = librosa.feature.chroma_cqt(C=np.abs(song_blob["other_cqt"]))
     bass_chroma = librosa.feature.chroma_cqt(C=np.abs(song_blob["bass_cqt"]))
 
-    cat_feat = np.concatenate((bass_chroma, other_chroma, vocals_chroma), axis=0)
+    vocals_chroma_perstep = gen_feat_perstep(vocals_chroma, step_idxs)
+    other_chroma_perstep = gen_feat_perstep(other_chroma, step_idxs)
+    bass_chroma_perstep = gen_feat_perstep(bass_chroma, step_idxs)
 
-    step_idxs = np.interp(np.arange(0, beats.size, 1/beat_steps), np.arange(0, beats.size, 1), beats)
-    step_idxs = np.rint(step_idxs).astype(np.int32)
-
-    cat_feat_perstep = gen_feat_perstep(cat_feat, step_idxs)
+    cat_feat_perstep = np.concatenate((
+        vocals_chroma_perstep,
+        other_chroma_perstep,
+        bass_chroma_perstep
+    ), axis=0)
     
     best_stat = -np.inf
     best_chunksize = None
@@ -95,5 +109,24 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
         if stat > best_stat:
             best_stat = stat
             best_offset = i
+
+    vocals_pyin = song_blob["vocals_pyin"][0].reshape((1, -1))
+    other_pyin = song_blob["other_pyin"][0].reshape((1, -1))
+    bass_pyin = song_blob["bass_pyin"][0].reshape((1, -1))
+
+    vocals_pyin_perstep = gen_feat_perstep(vocals_pyin, step_idxs)
+    other_pyin_perstep = gen_feat_perstep(other_pyin, step_idxs)
+    bass_pyin_perstep = gen_feat_perstep(bass_pyin, step_idxs)
+
+    cat_all_perstep = np.concatenate((
+        vocals_chroma_perstep,
+        other_chroma_perstep,
+        bass_chroma_perstep,
+        vocals_pyin_perstep,
+        other_pyin_perstep,
+        bass_pyin_perstep,
+    ), axis=0)
+
+    chunks = extract_chunks_from(cat_all_perstep, best_chunksize, best_offset, 3)
     
-    return best_chunksize, best_offset
+    return best_chunksize, best_offset, chunks
