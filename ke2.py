@@ -134,5 +134,5 @@ def postprocess(song_blob, beat_steps, chunksize_min, chunksize_max):
     ), axis=0)
 
     chunks = extract_chunks_from(cat_all_perstep, best_chunksize, best_offset, 3)
-    
+
     return best_chunksize, best_offset, chunks
