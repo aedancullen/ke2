@@ -1,25 +1,20 @@
-import numpy as np
 import librosa
-from spleeter.separator import Separator
-
-separator = Separator("spleeter:4stems")
+import numpy as np
 
 def monomix(audio):
     if len(audio.shape) > 1 and audio.shape[1] > 1:
         audio = audio.mean(axis=1)
     return audio
 
-def preprocess(audio, sr):
-
-    prediction = separator.separate(audio)
+def preprocess(separation, sr):
     
-    orig = monomix(audio)
-    vocals = monomix(prediction["vocals"])
-    other = monomix(prediction["other"])
-    bass = monomix(prediction["bass"])
-    drums = monomix(prediction["drums"])
+    #orig = monomix(separation)
+    vocals = monomix(separation["vocals"])
+    other = monomix(separation["other"])
+    bass = monomix(separation["bass"])
+    drums = monomix(separation["drums"])
     
-    orig = librosa.resample(orig, sr, 22050)
+    #orig = librosa.resample(orig, sr, 22050)
     vocals = librosa.resample(vocals, sr, 22050)
     other = librosa.resample(other, sr, 22050)
     bass = librosa.resample(bass, sr, 22050)
