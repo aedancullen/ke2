@@ -4,13 +4,14 @@ import ke2
 import h5py
 from spleeter.audio.adapter import AudioAdapter
 from spleeter.separator import Separator
+import time
 
 audio_loader = AudioAdapter.default()
 separator = Separator("spleeter:4stems")
 
 def task(name, separation, sr):
     song_blob = ke2.preprocess(separation, sr)
-    best_chunksize, best_offset, chunks = ke2.postprocess(song_blob, 4, 8, 32)
+    best_chunksize, best_offset, chunks = ke2.postprocess(song_blob, 4, [8, 16, 32, 6, 12, 24])
     return name, chunks
 
 def writeout(results):
