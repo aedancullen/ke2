@@ -9,6 +9,12 @@ mid.tracks.append(track_v)
 mid.tracks.append(track_o)
 mid.tracks.append(track_b)
 
+ticks = mid.ticks_per_beat // 4
+
+notes_v = []
+notes_o = []
+notes_b = []
+
 def t2m(text):
     tokens = text.split(' ')
     last_v = None
@@ -17,7 +23,6 @@ def t2m(text):
     for i, token in enumerate(tokens):
         if len(token) != 6:
             continue
-        ticks = (mid.ticks_per_beat // 4) * i
         v = token[0:2].strip('.')
         o = token[2:4].strip('.')
         b = token[4:6].strip('.')
@@ -25,20 +30,29 @@ def t2m(text):
         o = librosa.note_to_midi(o + '4') if o != "--" else last_o
         b = librosa.note_to_midi(b + '5') if b != "--" else last_b
         if v != last_v:
-            if last_v != None:
-                track_v.append(Message("note_off", note=last_v, velocity=127, time=ticks))
-            track_v.append(Message("note_on", note=v, velocity=64, time=ticks))
+            notes_v.append([v, ticks])
+        else:
+            notes_v[-1][1] += ticks
         if o != last_o:
-            if last_o != None:
-                track_o.append(Message("note_off", note=last_o, velocity=127, time=ticks))
-            track_o.append(Message("note_on", note=o, velocity=64, time=ticks))
+            notes_o.append([o, ticks])
+        else:
+            notes_o[-1][1] += ticks
         if b != last_b:
-            if last_b != None:
-                track_b.append(Message("note_off", note=last_b, velocity=127, time=ticks))
-            track_b.append(Message("note_on", note=b, velocity=64, time=ticks))
+            notes_b.append([b, ticks])
+        else:
+            notes_b[-1][1] += ticks
         last_v = v
         last_o = o
         last_b = b
+    for note in notes_v:
+        track_v.append(Message("note_on", note=note[0], velocity=64, time=0))
+        track_v.append(Message("note_off", note=note[0], velocity=127, time=note[1]))
+    for note in notes_o:
+        track_o.append(Message("note_on", note=note[0], velocity=64, time=0))
+        track_o.append(Message("note_off", note=note[0], velocity=127, time=note[1]))
+    for note in notes_b:
+        track_b.append(Message("note_on", note=note[0], velocity=64, time=0))
+        track_b.append(Message("note_off", note=note[0], velocity=127, time=note[1]))
     mid.save("output.mid")
 
 with open("output.txt", 'r') as infile:
@@ -46,3 +60,4 @@ with open("output.txt", 'r') as infile:
 
 print(text)
 t2m(text)
+
