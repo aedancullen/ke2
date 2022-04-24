@@ -22,7 +22,7 @@ def t2m(text):
         b = token[4:6].strip('.')
         v = librosa.note_to_midi(v + '3') if v != "--" else last_v
         o = librosa.note_to_midi(o + '4') if o != "--" else last_o
-        b = librosa.note_to_mini(b + '5') if b != "--" else last_b
+        b = librosa.note_to_midi(b + '5') if b != "--" else last_b
         if v != last_v:
             if v != None:
                 track.append(Message("note_off", last_v, velocity=127, time=ticks))
