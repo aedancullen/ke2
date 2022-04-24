@@ -1,4 +1,5 @@
-from mido import Mesage, MidiFile, MidiTrack
+from mido import Message, MidiFile, MidiTrack
+import librosa
 
 mid = MidiFile()
 track_v = MidiTrack()
@@ -24,17 +25,17 @@ def t2m(text):
         o = librosa.note_to_midi(o + '4') if o != "--" else last_o
         b = librosa.note_to_midi(b + '5') if b != "--" else last_b
         if v != last_v:
-            if v != None:
-                track.append(Message("note_off", last_v, velocity=127, time=ticks))
-            track.append(Message("note_on", v, velocity=64, time=ticks))
+            if last_v != None:
+                track_v.append(Message("note_off", note=last_v, velocity=127, time=ticks))
+            track_v.append(Message("note_on", note=v, velocity=64, time=ticks))
         if o != last_o:
-            if o != None:
-                track.append(Message("note_off", last_o, velocity=127, time=ticks))
-            track.append(Message("note_on", o, velocity=64, time=ticks))
+            if last_o != None:
+                track_o.append(Message("note_off", note=last_o, velocity=127, time=ticks))
+            track_o.append(Message("note_on", note=o, velocity=64, time=ticks))
         if b != last_b:
-            if b != None:
-                track.append(Message("note_off", last_b, velocity=127, time=ticks))
-            track.append(Message("note_on", b, velocity=64, time=ticks))
+            if last_b != None:
+                track_b.append(Message("note_off", note=last_b, velocity=127, time=ticks))
+            track_b.append(Message("note_on", note=b, velocity=64, time=ticks))
         last_v = v
         last_o = o
         last_b = b
