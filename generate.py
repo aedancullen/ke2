@@ -262,4 +262,4 @@ Note: This code should preferably be run on GPU.
 
 model = create_model()
 
-model.fit(text_ds, verbose=2, epochs=100, callbacks=[text_gen_callback])
+model.fit(text_ds, verbose=2, epochs=1000, callbacks=[text_gen_callback])
